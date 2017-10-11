@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.IO;
 
 namespace WhatPage
 {
@@ -48,12 +49,15 @@ namespace WhatPage
         {
             initUI();
 
-            exePathTb.Text = "C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe";
-                //"C:\\Program Files (x86)\\Internet Explorer\\iexplore.exe";
+            
+            //"C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe";
+            //"C:\\Program Files (x86)\\Internet Explorer\\iexplore.exe";
         }
 
         private void initUI() {
-           
+            cfgPath.Text = BASE_PATH + Constant.CONFIG_NAME;
+
+            initCfg();
         }
 
         private void runBtn_Click(object sender, EventArgs e)
@@ -67,9 +71,21 @@ namespace WhatPage
 
         }
 
-        private void stopBtn_Click(object sender, EventArgs e)
+        private void saveBtn_Click(object sender, EventArgs e)
         {
-            isRun = false;
+            string cfg = "";
+            cfg += "vpnName=" + vpnNameTb.Text + "\n";
+            cfg += "vpnUser=" + vpnUserTb.Text + "\n";
+            cfg += "vpnPass=" + vpnPassTb.Text + "\n";
+            cfg += "adRTime=" + adRTimeTb.Text + "\n";
+            cfg += "adX=" + adXTb.Text + "\n";
+            cfg += "adY=" + adYTb.Text + "\n";
+            cfg += "adRClick=" + adRClickTb.Text + "\n";
+            cfg += "exePath=" + exePathTb.Text + "\n";
+            cfg += "process=" + processTb.Text + "\n";
+            cfg += "url=" + urlTb.Text + "\n";
+            cfg += "randomScroll=" + randomScrollTb.Text + "\n";
+            saveCfg(cfgPath.Text, cfg);
         }
 
         private void run() {
@@ -105,22 +121,144 @@ namespace WhatPage
             }
         }
 
+
+        /// <summary>
+        /// 初始化cfg
+        /// </summary>
+        private void initCfg() {
+            LogUtil.LogMessage(log, "--------initCfg----------");
+            Dictionary<string, string> cfgDic = readCfg(cfgPath.Text);
+            if (cfgDic != null && cfgDic.Count > 0)
+            {
+                vpnNameTb.Text = cfgDic["vpnName"];
+                vpnUserTb.Text = cfgDic["vpnUser"];
+                vpnPassTb.Text = cfgDic["vpnPass"];
+                adRTimeTb.Text = cfgDic["adRTime"];
+                adXTb.Text = cfgDic["adX"];
+                adYTb.Text = cfgDic["adY"];
+                adRClickTb.Text = cfgDic["adRClick"];
+                exePathTb.Text = cfgDic["exePath"];
+                processTb.Text = cfgDic["process"];
+                urlTb.Text = cfgDic["url"];
+                randomScrollTb.Text = cfgDic["randomScroll"];
+            }
+        }
+
+        /// <summary>
+        /// 保存cfg
+        /// </summary>
+        private bool saveCfg(string filePath, string content)
+        {
+            LogUtil.LogMessage(log, "--------saveCfg----------");
+            LogUtil.LogMessage(log, content);
+            try
+            {
+                if (!File.Exists(filePath))
+                {
+                    FileStream stream = File.Create(filePath);
+                    stream.Close();
+                }
+                StreamWriter writer = new StreamWriter(filePath, false);
+                writer.Write(content);
+                writer.Flush();
+                writer.Close();
+                return true;
+
+
+                //if (File.Exists(propPath))
+                //{
+                //    删除后重新创建
+                //    File.Delete(propPath);
+                //    File.Copy(modelPath, propPath);
+                //    return true;
+                //}
+                //else
+                //{
+                //    创建一个文件改写
+                //    File.Copy(modelPath, propPath);
+                //    return true;
+                //}
+            }
+            catch (Exception e)
+            {
+
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 读取一个property内容
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
+        private Dictionary<string, string> readCfg(string filePath)
+        {
+            Dictionary<string, string> contentDictionary = new Dictionary<string, string>();
+            if (!File.Exists(filePath))
+            {
+                return contentDictionary;
+            }
+            FileStream fileStream = null;
+            StreamReader streamReader = null;
+            try
+            {
+                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+                streamReader = new StreamReader(fileStream, Encoding.Default);
+                fileStream.Seek(0, SeekOrigin.Begin);
+                string content = streamReader.ReadLine();
+                while (content != null)
+                {
+                    if (content.Contains("="))
+                    {
+                        string key = content.Substring(0, content.LastIndexOf("=")).Trim();
+                        string value = content.Substring(content.LastIndexOf("=") + 1).Trim();
+                        if (!contentDictionary.ContainsKey(key))
+                        {
+                            contentDictionary.Add(key, value);
+                        }
+                    }
+                    content = streamReader.ReadLine();
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                if (fileStream != null)
+                {
+                    fileStream.Close();
+                }
+                if (streamReader != null)
+                {
+                    streamReader.Close();
+                }
+            }
+            return contentDictionary;
+        }
+
         /// <summary>
         /// 随机点击广告
         /// </summary>
-        private void clickAd() { 
-        
+        private void clickAd(int x, int y, int random) {
+            LogUtil.LogMessage(log, "--------click ad----------");
+            int val = getRandomVal(random);
+            LogUtil.LogMessage(log, "--------sleep "+ val +"s----------");
+            Thread.Sleep(val * 1000);
+            click(x, y);
         }
 
         /// <summary>
         /// 随机访问网页
         /// </summary>
-        private void radomWebpage() { 
-
-        }
-
-        private void saveLog() { 
-        
+        private void radomWebpage(int times) {
+            LogUtil.LogMessage(log, "--------radomWebpage----------");
+            for (int i = 0; i <= times; i++)
+            {
+                LogUtil.LogMessage(log, "--------sleep 0.5s----------");
+                Thread.Sleep(500);
+                scroll();
+            }
         }
 
         /// <summary>
@@ -228,7 +366,28 @@ namespace WhatPage
                         // 二.添加检测网页是否打开的
                         LogUtil.LogMessage(log, "添加检测网页是否打开的");
                         Thread.Sleep(3000); //TODO 添加检测网页是否打开的
+                        
+                        if (Util.getProcessStaus(processTb.Text) == Util.PROCESS_RUNNING)
+                        {
+                            LogUtil.LogMessage(log, "----网页已经打开----");
+                            clickAd(1468, 96, 5);
 
+                            Thread.Sleep(3000);
+
+                            radomWebpage(4);
+
+                            //TODO 清除缓存
+                            LogUtil.LogMessage(log, "----关闭网页----");
+                            Util.closeProcess(processTb.Text);
+
+                        }
+
+                        
+
+                        //关闭vpn
+                        LogUtil.LogMessage(log, "----关闭VPN----");
+                        isVpnConnect = false;
+                        closeNet();
 
                     }
 
@@ -236,6 +395,13 @@ namespace WhatPage
             }
         }
 
+
+        //获取一个随机值
+        private int getRandomVal(int max)
+        {
+            Random rd = new Random();
+            return rd.Next(0, max);
+        }
 
         #region
         //双击
@@ -258,12 +424,18 @@ namespace WhatPage
             mouse_event(MouseEventFlag.LeftUp, 0, 0, 0, UIntPtr.Zero);
         }
 
+        //滚动
+        
+        private void scroll() {
+            mouse_event(MouseEventFlag.Wheel, 0, 0, -2000, UIntPtr.Zero);
+        }
+
         [DllImport("user32.dll")]
         static extern bool SetCursorPos(int X, int Y);
 
         [DllImport("user32.dll")]
         static extern void mouse_event(MouseEventFlag flags,
-            int dx, int dy, uint data, UIntPtr extraInfo);
+            int dx, int dy, int data, UIntPtr extraInfo);
 
         [Flags]
         enum MouseEventFlag : uint
@@ -365,6 +537,8 @@ namespace WhatPage
         }
 
         #endregion
+
+       
 
 
       

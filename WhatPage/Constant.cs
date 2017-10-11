@@ -8,7 +8,9 @@ namespace WhatPage
 {
     class Constant
     {
-      
+
+        public const String CONFIG_NAME = "cfg.init";
+            
         public class Folders
         {
             public const String IPS_FOLDER_NAME = "ips";
